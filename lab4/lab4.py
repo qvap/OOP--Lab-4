@@ -1,56 +1,7 @@
 import customtkinter as ctk
 from tkinter import Canvas
 from math import sqrt
-
-class Figure(): # Общий класс фигуры
-    def __init__(self, canvas, x, y):
-        # Protected
-        self._size = 1.0
-        self._color ="#000000"
-        self._border_color = "#ffffff"
-        self._selected = False
-        self._x = x
-        self._y = y
-        self._chosen_border_color = ""
-
-        # Public
-        self.canvas = canvas
-
-        print(f"New point: {x}, {y}")
-    
-    def draw(self): # Переопред. в классе
-        self._chosen_border_color = self._border_color if self._selected else self._color
-
-    def select(self):
-        self._selected = True
-
-    def deselect(self):
-        self._selected = False
-    
-    def mousecheck(self, x: int, y: int): # Переопред. в классе
-        pass
-
-    def destroy(self) -> bool:
-        if self._selected:
-            del self
-            return True
-        return False
-
-class CCircle(Figure): # Базовый класс круга
-
-    def __init__(self, canvas, x, y):
-        super().__init__(canvas=canvas, x=x, y=y)
-
-        # Private
-        self._radius = 50
-
-    def draw(self): # Отрисовывает круг на Canvas
-        super().draw()
-        self.canvas.create_oval(self._x - self._radius, self._y - self._radius,\
-            self._x + self._radius, self._y + self._radius, fill = self._color, width = 5, outline = self._chosen_border_color)
-
-    def mousecheck(self, x: int, y: int) -> bool: # Проверяет, наход. ли точка внутри круга
-        return ((x - self._x)**2 + (y - self._y)**2) <= self._radius**2
+from figures.Circle import CCircle
 
 class Container():
 
@@ -62,14 +13,42 @@ class Container():
 
         # Public
         self.canvas = canvas
+        self.should_stop = False # если один объект застрял
     
     def container_append(self, object: CCircle): # Добавляет в контейнер новый круг
         print(f"Appending new object: {object}")
         self.__container.append(object)
     
-    def create_objects(self, point): # Создаёт новый круг и добавляет в список
-        self.container_append(CCircle(x=point.x, y=point.y, canvas=self.canvas))
-    
+    def handle_mouse_click(self, point): # Создаёт новый круг и добавляет в список, если нет выделенных объектов
+        if not self.__selected_container:
+            self.container_append(CCircle(x=point.x, y=point.y, canvas=self.canvas))
+        else:
+            for object in self.__selected_container:
+                object.measure_offsets(point.x, point.y)
+
+    def safe_move_all(self, point): # Передвигает объекты и проверяет их границы, чтобы остановить их все
+        new_positions = []
+
+        for obj in self.__selected_container:
+            new_x = point.x + obj._offset_x
+            new_y = point.y + obj._offset_y
+
+            if not obj.boundaries(new_x, new_y, self.canvas.winfo_width(), self.canvas.winfo_height()):
+                return  # Один объект не может быть перемещён — отменяем перемещение всех
+
+            new_positions.append((obj, new_x, new_y))
+
+        for obj, x, y in new_positions:
+            obj._x = x
+            obj._y = y
+
+    def get_movement_status(self) -> bool:
+        return self.should_stop
+
+    def handle_mouse_down(self, point):
+        if self.__selected_container:
+            self.safe_move_all(point)
+
     def select_objects(self, point): # Выделяет круги (в зависимости от __multiple_selection меняется поведение)
         if not(self.__multiple_selection):
             for circle in self.__selected_container:
@@ -122,7 +101,8 @@ class App(ctk.CTk):
 
         self.container = Container(canvas=self.canvas)
 
-        self.bind("<Button-1>", self.container.create_objects)
+        self.bind("<Button-1>", self.container.handle_mouse_click)
+        self.bind("<B1-Motion>", self.container.handle_mouse_down)
         self.bind("<Button-3>", self.container.select_objects)
         self.bind_all("<Escape>", self.container.deselect_objects)
         self.bind_all("<Delete>", self.container.delete_objects)
