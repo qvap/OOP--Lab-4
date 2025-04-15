@@ -2,18 +2,21 @@ import customtkinter as ctk
 from tkinter import Canvas
 from math import sqrt
 from figures.Circle import CCircle
+from figures.ColorButton import CColorButton
+from figures.FigureButton import CFigureButton
 
-class Container():
+class Container(): # Главный контейнер объектов
 
     def __init__(self, canvas):
         # Private
         self.__container = list()
         self.__selected_container = list()
-        self.__multiple_selection = False
+        self.__action = False
 
         # Public
         self.canvas = canvas
         self.should_stop = False # если один объект застрял
+        self.chosen_color = "#000000"
     
     def container_append(self, object: CCircle): # Добавляет в контейнер новый круг
         print(f"Appending new object: {object}")
@@ -21,7 +24,7 @@ class Container():
     
     def handle_mouse_click(self, point): # Создаёт новый круг и добавляет в список, если нет выделенных объектов
         if not self.__selected_container:
-            self.container_append(CCircle(x=point.x, y=point.y, canvas=self.canvas))
+            self.container_append(CCircle(master=self, x=point.x, y=point.y, canvas=self.canvas))
         else:
             for object in self.__selected_container:
                 object.measure_offsets(point.x, point.y)
@@ -50,7 +53,7 @@ class Container():
             self.safe_move_all(point)
 
     def select_objects(self, point): # Выделяет круги (в зависимости от __multiple_selection меняется поведение)
-        if not(self.__multiple_selection):
+        if not(self.__action):
             for circle in self.__selected_container:
                 circle.deselect()
             self.__selected_container.clear()
@@ -68,11 +71,11 @@ class Container():
         self.__container = [obj for obj in self.__container if not obj.destroy()]
         self.__selected_container.clear()
     
-    def initiate_selection(self, *args): # Включает множественное выделение
-        self.__multiple_selection = True
+    def initiate_additional_action(self, *args): # Включает дополнительное действие
+        self.__action = True
 
-    def stop_selection(self, *args): # Выключает множественное выделение
-        self.__multiple_selection = False
+    def stop_additional_action(self, *args): # Выключает дополнительное действие
+        self.__action = False
     
     def __getattribute__(self, name): # событие Paint
         attr = super().__getattribute__(name)
@@ -86,28 +89,59 @@ class Container():
             return wrapper
         return attr
 
+
+class EditorPanel(ctk.CTkFrame): # Главная панель с кнопками
+    def __init__(self, master, container):
+        super().__init__(master)
+        self._container = container
+
+        self._colors = ["#FF0000", "#00FF00", "#0000FF", "#000000"]
+        self._figures = ["○", "△", "▢", "▭"]
+
+        self.configure(height=200)
+        self.rowconfigure((0,1), weight=1)
+        self.columnconfigure((0,1,2,3), weight=1)
+
+        for b in range(4):
+            colorbutton = CColorButton(master=self)
+            colorbutton.configure(command=lambda col=self._colors[b]: self.change_color(col))
+            colorbutton.set_color(self._colors[b])
+            colorbutton.grid(row=0, column=b, pady=5, padx=5)
+
+            figurebutton = CFigureButton(master=self)
+            figurebutton.set_figure(self._figures[b])
+            figurebutton.grid(row=1, column=b, pady=5, padx=5)
+    
+    def change_color(self, color: str):
+        self._container.chosen_color = color
+
+
 class App(ctk.CTk):
 
     def __init__(self):
         super().__init__()
 
-        self.title("Лабораторная работа №3")
-        self.geometry("400x600")
-        self.rowconfigure(0, weight=1)
+        self.title("Лабораторная работа №4")
+        self.geometry("1280x720")
+        self.rowconfigure(0, weight=0)
+        self.rowconfigure(1, weight=1)
         self.columnconfigure(0, weight=1)
 
         self.canvas = Canvas(master=self, bg="#24211e", highlightbackground="#24211e")
-        self.canvas.grid(row=0, column=0, sticky="nsew")
+        self.canvas.grid(row=1, column=0, sticky="nsew", padx=0, pady=0)
 
         self.container = Container(canvas=self.canvas)
+
+        self.editorpanel = EditorPanel(master=self, container=self.container)
+        self.editorpanel.grid(row=0, column=0, sticky="NW")
 
         self.bind("<Button-1>", self.container.handle_mouse_click)
         self.bind("<B1-Motion>", self.container.handle_mouse_down)
         self.bind("<Button-3>", self.container.select_objects)
         self.bind_all("<Escape>", self.container.deselect_objects)
         self.bind_all("<Delete>", self.container.delete_objects)
-        self.bind("<KeyPress-Control_L>", self.container.initiate_selection)
-        self.bind("<KeyRelease-Control_L>", self.container.stop_selection)
+        self.bind("<KeyPress-Control_L>", self.container.initiate_additional_action)
+        self.bind("<KeyRelease-Control_L>", self.container.stop_additional_action)
 
 if __name__ == "__main__":
     app = App()

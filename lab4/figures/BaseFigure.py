@@ -1,8 +1,9 @@
 class Figure(): # Общий класс фигуры
-    def __init__(self, canvas, x, y):
+    def __init__(self, master, canvas, x, y):
         # Protected
+        self._container = master
         self._size = 100.0
-        self._color ="#000000"
+        self._color =self._container.chosen_color
         self._border_color = "#ffffff"
         self._selected = False
         self._x = x

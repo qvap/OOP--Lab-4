@@ -2,8 +2,8 @@ from figures.BaseFigure import Figure
 
 class CCircle(Figure): # Базовый класс круга
 
-    def __init__(self, canvas, x, y):
-        super().__init__(x=x, y=y, canvas=canvas)
+    def __init__(self, master, canvas, x, y):
+        super().__init__(master=master, x=x, y=y, canvas=canvas)
 
         # Private
         self._radius = self._size // 2
