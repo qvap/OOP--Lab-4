@@ -2,8 +2,8 @@ import customtkinter as ctk
 from tkinter import Canvas
 from math import sqrt
 from figures.Circle import CCircle
-from figures.ColorButton import CColorButton
-from figures.FigureButton import CFigureButton
+from buttons.ColorButton import CColorButton
+from buttons.FigureButton import CFigureButton
 
 class Container(): # Главный контейнер объектов
 

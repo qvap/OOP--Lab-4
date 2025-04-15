@@ -1,5 +1,5 @@
 import customtkinter as ctk
-from figures.BaseButton import CButton
+from buttons.BaseButton import CButton
 
 class CFigureButton(CButton):
     def __init__(self, master):
