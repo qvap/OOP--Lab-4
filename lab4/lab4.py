@@ -12,45 +12,64 @@ class Container(): # Главный контейнер объектов
         self.__container = list()
         self.__selected_container = list()
         self.__action = False
+        self.__initial_sizes = dict()
 
         # Public
         self.canvas = canvas
-        self.should_stop = False # если один объект застрял
         self.chosen_color = "#000000"
     
     def container_append(self, object: CCircle): # Добавляет в контейнер новый круг
         print(f"Appending new object: {object}")
         self.__container.append(object)
     
-    def handle_mouse_click(self, point): # Создаёт новый круг и добавляет в список, если нет выделенных объектов
-        if not self.__selected_container:
-            self.container_append(CCircle(master=self, x=point.x, y=point.y, canvas=self.canvas))
-        else:
-            for object in self.__selected_container:
-                object.measure_offsets(point.x, point.y)
-
     def safe_move_all(self, point): # Передвигает объекты и проверяет их границы, чтобы остановить их все
         new_positions = []
 
         for obj in self.__selected_container:
             new_x = point.x + obj._offset_x
             new_y = point.y + obj._offset_y
-
-            if not obj.boundaries(new_x, new_y, self.canvas.winfo_width(), self.canvas.winfo_height()):
+            if not obj.boundaries(new_x, new_y, obj.size[0], obj.size[1], self.canvas.winfo_width(), self.canvas.winfo_height()):
                 return  # Один объект не может быть перемещён — отменяем перемещение всех
-
             new_positions.append((obj, new_x, new_y))
 
         for obj, x, y in new_positions:
             obj._x = x
             obj._y = y
+    
+    def scale_all(self, point): # Меняет размер объектов
+        new_scales = []
+        weightpoint = [0, 0] # усред. точка между объектами (точка массы)
+        for obj in self.__selected_container: # считаем усреднённую точку
+            weightpoint[0] += obj._x
+            weightpoint[1] += obj._y
+        
+        weightpoint = [x / len(self.__selected_container) for x in weightpoint] # среднее арифметическое
 
-    def get_movement_status(self) -> bool:
-        return self.should_stop
+        for obj in self.__selected_container:
+            new_size_coef = (self.measure_prolongate(weightpoint[0], weightpoint[1], point.x, point.y) / 100.0) + 1.0
+            new_size = [x * new_size_coef for x in self.__initial_sizes[obj]]
+            if not obj.boundaries(obj._x, obj._y, new_size[0], new_size[1], self.canvas.winfo_width(), self.canvas.winfo_height()):
+                return
+            new_scales.append((obj,new_size))
+        
+        for obj, new_size in new_scales:
+            obj.size = new_size
+        
+    def measure_prolongate(self, start_point_x: int, start_point_y: int, end_point_x: int, end_point_y: int) -> float: # считает расстояние от точки до точки
+        return sqrt((end_point_x - start_point_x)**2+(end_point_y - start_point_y)**2)
+
+    def handle_mouse_click(self, point): # Создаёт новый круг и добавляет в список, если нет выделенных объектов
+        if not self.__selected_container:
+            self.container_append(CCircle(master=self, x=point.x, y=point.y, canvas=self.canvas))
+        else:
+            for object in self.__selected_container:
+                object.measure_offsets(point.x, point.y)
+                if self.__action:
+                    self.__initial_sizes[object] = object.size
 
     def handle_mouse_down(self, point):
         if self.__selected_container:
-            self.safe_move_all(point)
+            self.safe_move_all(point) if not(self.__action) else self.scale_all(point)
 
     def select_objects(self, point): # Выделяет круги (в зависимости от __multiple_selection меняется поведение)
         if not(self.__action):
