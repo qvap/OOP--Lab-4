@@ -18,7 +18,8 @@ class Figure(): # Общий класс фигуры
 
         # Public
         self.canvas = canvas
-        self.size = [self._size_x * self._size_coef, self._size_y * self._size_coef]
+        self.size = [0, 0]
+        self.update_size()
 
         self._chosen_border_color = ""
 
@@ -36,8 +37,7 @@ class Figure(): # Общий класс фигуры
     def mousecheck(self, x: int, y: int): # Переопред. в классе
         pass
 
-    def set_size_coef(self, size_coef: float):
-        self._size_coef = size_coef
+    def update_size(self):
         self.size = [self._size_x * self._size_coef, self._size_y * self._size_coef]
 
     def measure_offsets(self, x: int, y: int): # Вычисляет относ. положение фигуры от мыши

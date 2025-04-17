@@ -2,23 +2,29 @@ import customtkinter as ctk
 from tkinter import Canvas
 from math import sqrt
 from figures.Circle import CCircle
+from figures.Rectangle import CRectangle
+from figures.Square import CSquare
+from figures.Triangle import CTriangle
 from buttons.ColorButton import CColorButton
 from buttons.FigureButton import CFigureButton
 
 class Container(): # Главный контейнер объектов
 
-    def __init__(self, canvas):
+    def __init__(self, master, canvas):
         # Private
         self.__container = list()
         self.__selected_container = list()
         self.__action = False
         self.__initial_sizes = dict()
+        self.__app = master
+        self.__widget = None #виджет, на котором находится мышка
 
         # Public
         self.canvas = canvas
         self.chosen_color = "#000000"
+        self.chosen_figure = "○"
     
-    def container_append(self, object: CCircle): # Добавляет в контейнер новый круг
+    def container_append(self, object): # Добавляет в контейнер новый круг
         print(f"Appending new object: {object}")
         self.__container.append(object)
     
@@ -59,16 +65,26 @@ class Container(): # Главный контейнер объектов
         return sqrt((end_point_x - start_point_x)**2+(end_point_y - start_point_y)**2)
 
     def handle_mouse_click(self, point): # Создаёт новый круг и добавляет в список, если нет выделенных объектов
-        if not self.__selected_container:
-            self.container_append(CCircle(master=self, x=point.x, y=point.y, canvas=self.canvas))
-        else:
-            for object in self.__selected_container:
-                object.measure_offsets(point.x, point.y)
-                if self.__action:
-                    self.__initial_sizes[object] = object.size
+        self.__widget = self.__app.winfo_containing(point.x_root, point.y_root)
+        if self.__widget == self.canvas:
+            if not self.__selected_container:
+                match self.chosen_figure:
+                    case "○":
+                        self.container_append(CCircle(master=self, x=point.x, y=point.y, canvas=self.canvas))
+                    case "▢":
+                        self.container_append(CSquare(master=self, x=point.x, y=point.y, canvas=self.canvas))
+                    case "▭":
+                        self.container_append(CRectangle(master=self, x=point.x, y=point.y, canvas=self.canvas))
+                    case "△":
+                        self.container_append(CTriangle(master=self, x=point.x, y=point.y, canvas=self.canvas))
+            else:
+                for object in self.__selected_container:
+                    object.measure_offsets(point.x, point.y)
+                    if self.__action:
+                        self.__initial_sizes[object] = object.size
 
     def handle_mouse_down(self, point):
-        if self.__selected_container:
+        if self.__selected_container and self.__widget == self.canvas:
             self.safe_move_all(point) if not(self.__action) else self.scale_all(point)
 
     def select_objects(self, point): # Выделяет круги (в зависимости от __multiple_selection меняется поведение)
@@ -114,8 +130,9 @@ class EditorPanel(ctk.CTkFrame): # Главная панель с кнопкам
         super().__init__(master)
         self._container = container
 
-        self._colors = ["#FF0000", "#00FF00", "#0000FF", "#000000"]
-        self._figures = ["○", "△", "▢", "▭"]
+        colors = ["#FF0000", "#00FF00", "#0000FF", "#000000"]
+        hover_colors = ["#AA0000", "#00AA00", "#0000AA", "#444444"]
+        figures = ["○", "△", "▢", "▭"]
 
         self.configure(height=200)
         self.rowconfigure((0,1), weight=1)
@@ -123,16 +140,20 @@ class EditorPanel(ctk.CTkFrame): # Главная панель с кнопкам
 
         for b in range(4):
             colorbutton = CColorButton(master=self)
-            colorbutton.configure(command=lambda col=self._colors[b]: self.change_color(col))
-            colorbutton.set_color(self._colors[b])
+            colorbutton.configure(command=lambda col=colors[b]: self.change_color(col))
+            colorbutton.set_color(colors[b], hover_colors[b])
             colorbutton.grid(row=0, column=b, pady=5, padx=5)
 
             figurebutton = CFigureButton(master=self)
-            figurebutton.set_figure(self._figures[b])
+            figurebutton.configure(command=lambda figure=figures[b]: self.change_figure(figure))
+            figurebutton.set_figure(figures[b])
             figurebutton.grid(row=1, column=b, pady=5, padx=5)
     
     def change_color(self, color: str):
         self._container.chosen_color = color
+    
+    def change_figure(self, figure: str):
+        self._container.chosen_figure = figure
 
 
 class App(ctk.CTk):
@@ -149,7 +170,7 @@ class App(ctk.CTk):
         self.canvas = Canvas(master=self, bg="#24211e", highlightbackground="#24211e")
         self.canvas.grid(row=1, column=0, sticky="nsew", padx=0, pady=0)
 
-        self.container = Container(canvas=self.canvas)
+        self.container = Container(canvas=self.canvas, master=self)
 
         self.editorpanel = EditorPanel(master=self, container=self.container)
         self.editorpanel.grid(row=0, column=0, sticky="NW")

@@ -3,7 +3,7 @@ from figures.BaseFigure import Figure
 class CCircle(Figure): # Базовый класс круга
 
     def __init__(self, master, canvas, x, y):
-        super().__init__(master=master, x=x, y=y, canvas=canvas)
+        super().__init__(master, canvas, x, y)
 
         # Private
         self._radius = self.size[0] // 2
@@ -16,8 +16,3 @@ class CCircle(Figure): # Базовый класс круга
 
     def mousecheck(self, x: int, y: int) -> bool: # Проверяет, наход. ли точка внутри круга
         return ((x - self._x)**2 + (y - self._y)**2) <= self._radius**2
-
-    def move(self, x: int, y: int):
-        super().move(x, y)
-        self._x = self.constrain(self._radius, self.canvas.winfo_width() - self._radius, self._x)
-        self._y = self.constrain(self._radius, self.canvas.winfo_height() - self._radius, self._y)
