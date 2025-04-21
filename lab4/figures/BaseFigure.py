@@ -48,13 +48,6 @@ class Figure(): # Общий класс фигуры
         return (size_x // 2) <= x <= canvas_width - (size_x // 2) and \
                (size_y // 2) <= y <= canvas_height - (size_y // 2)
 
-    def constrain(self, lower_limit:int, upper_limit:int, value:int) -> int: # не даёт значению выйти за границы
-        if value < lower_limit:
-            return lower_limit
-        if value > upper_limit:
-            return upper_limit
-        return value
-
     def destroy(self) -> bool:
         if self._selected:
             del self

@@ -27,6 +27,7 @@ class Container(): # Главный контейнер объектов
     def container_append(self, object): # Добавляет в контейнер новый круг
         print(f"Appending new object: {object}")
         self.__container.append(object)
+        self.__initial_sizes[object] = object.size
     
     def safe_move_all(self, point): # Передвигает объекты и проверяет их границы, чтобы остановить их все
         new_positions = []
@@ -80,8 +81,6 @@ class Container(): # Главный контейнер объектов
             else:
                 for object in self.__selected_container:
                     object.measure_offsets(point.x, point.y)
-                    if self.__action:
-                        self.__initial_sizes[object] = object.size
 
     def handle_mouse_down(self, point):
         if self.__selected_container and self.__widget == self.canvas:
