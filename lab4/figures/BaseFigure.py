@@ -47,9 +47,3 @@ class Figure(): # Общий класс фигуры
     def boundaries(self, x: int, y: int, size_x: float, size_y: float, canvas_width: int, canvas_height: int) -> bool: # опред. границ
         return (size_x // 2) <= x <= canvas_width - (size_x // 2) and \
                (size_y // 2) <= y <= canvas_height - (size_y // 2)
-
-    def destroy(self) -> bool:
-        if self._selected:
-            del self
-            return True
-        return False

@@ -78,13 +78,18 @@ class Container(): # Главный контейнер объектов
                         self.container_append(CRectangle(master=self, x=point.x, y=point.y, canvas=self.canvas))
                     case "△":
                         self.container_append(CTriangle(master=self, x=point.x, y=point.y, canvas=self.canvas))
+                
+                self.redraw()
             else:
                 for object in self.__selected_container:
                     object.measure_offsets(point.x, point.y)
-
+            
+        
     def handle_mouse_down(self, point):
         if self.__selected_container and self.__widget == self.canvas:
             self.safe_move_all(point) if not(self.__action) else self.scale_all(point)
+
+            self.redraw()
 
     def select_objects(self, point): # Выделяет круги (в зависимости от __multiple_selection меняется поведение)
         if not(self.__action):
@@ -95,15 +100,23 @@ class Container(): # Главный контейнер объектов
         self.__selected_container.extend(list(filter(lambda x: x.mousecheck(point.x, point.y), self.__container)))
         for circle in self.__selected_container:
             circle.select()
+        
+        self.redraw()
     
     def deselect_objects(self, *args): # Снимает выделение со всех кругов
         for circle in self.__selected_container:
             circle.deselect()
         self.__selected_container.clear()
+
+        self.redraw()
     
     def delete_objects(self, *args): # Удаляет выделенные объекты
-        self.__container = [obj for obj in self.__container if not obj.destroy()]
+        for obj in self.__selected_container:
+            self.__container.remove(obj)
+            del obj
         self.__selected_container.clear()
+
+        self.redraw()
     
     def initiate_additional_action(self, *args): # Включает дополнительное действие
         self.__action = True
@@ -111,17 +124,10 @@ class Container(): # Главный контейнер объектов
     def stop_additional_action(self, *args): # Выключает дополнительное действие
         self.__action = False
     
-    def __getattribute__(self, name): # событие Paint
-        attr = super().__getattribute__(name)
-        if callable(attr):
-            def wrapper(*args, **kwargs):
-                result = attr(*args, **kwargs)
-                self.canvas.delete("all")
-                for circle in self.__container:
-                    circle.draw()
-                return result
-            return wrapper
-        return attr
+    def redraw(self):
+        self.canvas.delete("all")
+        for circle in self.__container:
+            circle.draw()
 
 
 class EditorPanel(ctk.CTkFrame): # Главная панель с кнопками
