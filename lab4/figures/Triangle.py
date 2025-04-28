@@ -8,16 +8,16 @@ class CTriangle(Figure):
         self.__triangle_points = [[],[],[]]
         self.update_points()
 
-    def draw(self):
-        super().draw()
+    def draw(self, draw_border: bool):
+        super().draw(draw_border)
         self.update_points()
         points = [coordinate for point in self.__triangle_points for coordinate in point] # раскрытие вложенности
         self.canvas.create_polygon(points, fill = self._color, width = 5, outline = self._chosen_border_color)
     
     def update_points(self):
-        self.__triangle_points = [[self._x - (self.size[0] // 2), self._y + (self.size[1] // 2)],\
-                                 [self._x, self._y - (self.size[1] // 2)],\
-                                 [self._x + (self.size[0] // 2), self._y + (self.size[1] // 2)]]
+        self.__triangle_points = [[self._x - (self._size[0] // 2), self._y + (self._size[1] // 2)],\
+                                 [self._x, self._y - (self._size[1] // 2)],\
+                                 [self._x + (self._size[0] // 2), self._y + (self._size[1] // 2)]]
         
     def sign(self, number: float) -> int: # проверяет знак
         if number < 0:

@@ -6,11 +6,11 @@ class CCircle(Figure): # Базовый класс круга
         super().__init__(master, canvas, x, y)
 
         # Private
-        self._radius = self.size[0] // 2
+        self._radius = self._size[0] // 2
 
-    def draw(self): # Отрисовывает круг на Canvas
-        super().draw()
-        self._radius = self.size[0] // 2
+    def draw(self, draw_border: bool): # Отрисовывает круг на Canvas
+        super().draw(draw_border)
+        self._radius = self._size[0] // 2
         self.canvas.create_oval(self._x - self._radius, self._y - self._radius,\
             self._x + self._radius, self._y + self._radius, fill = self._color, width = 5, outline = self._chosen_border_color)
 

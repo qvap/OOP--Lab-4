@@ -7,14 +7,12 @@ class CRectangle(Figure): # Базовый класс прямоугольник
         # Private
         self.__half_size_x, self.__half_size_y = 0, 0
 
-        self._size_x = 100.0
-        self._size_y = 50.0
-        self.update_size()
+        self._size = [100.0, 50.0]
     
-    def draw(self):
-        super().draw()
-        self.__half_size_x = self.size[0] // 2
-        self.__half_size_y = self.size[1] // 2
+    def draw(self, draw_border: bool):
+        super().draw(draw_border)
+        self.__half_size_x = self._size[0] // 2
+        self.__half_size_y = self._size[1] // 2
         self.canvas.create_rectangle(self._x - self.__half_size_x,
                                      self._y - self.__half_size_y,
                                      self._x + self.__half_size_x,

@@ -1,6 +1,6 @@
 import customtkinter as ctk
 from tkinter import Canvas
-from math import sqrt
+from Tools import Tools
 from figures.Circle import CCircle
 from figures.Rectangle import CRectangle
 from figures.Square import CSquare
@@ -17,25 +17,20 @@ class Container(): # Главный контейнер объектов
         self.__action = False
         self.__initial_sizes = dict()
         self.__app = master
-        self.__widget = None #виджет, на котором находится мышка
 
         # Public
         self.canvas = canvas
         self.chosen_color = "#000000"
         self.chosen_figure = "○"
-    
-    def container_append(self, object): # Добавляет в контейнер новый круг
-        print(f"Appending new object: {object}")
-        self.__container.append(object)
-        self.__initial_sizes[object] = object.size
-    
+
     def safe_move_all(self, point): # Передвигает объекты и проверяет их границы, чтобы остановить их все
         new_positions = []
 
         for obj in self.__selected_container:
+            obj_size = obj.pass_size()
             new_x = point.x + obj._offset_x
             new_y = point.y + obj._offset_y
-            if not obj.boundaries(new_x, new_y, obj.size[0], obj.size[1], self.canvas.winfo_width(), self.canvas.winfo_height()):
+            if not obj.boundaries(new_x, new_y, obj_size[0], obj_size[1], self.canvas.winfo_width(), self.canvas.winfo_height()):
                 return  # Один объект не может быть перемещён — отменяем перемещение всех
             new_positions.append((obj, new_x, new_y))
 
@@ -46,72 +41,82 @@ class Container(): # Главный контейнер объектов
         new_scales = []
         weightpoint = [0, 0] # усред. точка между объектами (точка массы)
         for obj in self.__selected_container: # считаем усреднённую точку
-            weightpoint[0] += obj._x
-            weightpoint[1] += obj._y
+            obj_coords = obj.pass_coordinates()
+            weightpoint[0] += obj_coords[0]
+            weightpoint[1] += obj_coords[1]
         
         weightpoint = [x / len(self.__selected_container) for x in weightpoint] # среднее арифметическое
 
         for obj in self.__selected_container:
-            new_size_coef = (self.measure_prolongate(weightpoint[0], weightpoint[1], point.x, point.y) / 100.0) + 1.0
+            obj_coords = obj.pass_coordinates()
+            new_size_coef = (Tools.measure_prolongate(weightpoint[0], weightpoint[1], point.x, point.y) / 100.0) + 1.0
             new_size = [x * new_size_coef for x in self.__initial_sizes[obj]]
-            if not obj.boundaries(obj._x, obj._y, new_size[0], new_size[1], self.canvas.winfo_width(), self.canvas.winfo_height()):
+            if not obj.boundaries(obj_coords[0], obj_coords[1], new_size[0], new_size[1], self.canvas.winfo_width(), self.canvas.winfo_height()):
                 return
             new_scales.append((obj,new_size))
         
         for obj, new_size in new_scales:
             obj.resize(new_size)
-        
-    def measure_prolongate(self, start_point_x: int, start_point_y: int, end_point_x: int, end_point_y: int) -> float: # считает расстояние от точки до точки
-        return sqrt((end_point_x - start_point_x)**2+(end_point_y - start_point_y)**2)
 
-    def handle_mouse_click(self, point): # Создаёт новый круг и добавляет в список, если нет выделенных объектов
-        self.__widget = self.__app.winfo_containing(point.x_root, point.y_root)
-        if self.__widget == self.canvas:
+    def handle_mouse_click(self, point): # Что происходит во время нажатия мышью
+        __widget = self.__app.winfo_containing(point.x_root, point.y_root)
+        if __widget == self.canvas:
             if not self.__selected_container:
-                match self.chosen_figure:
-                    case "○":
-                        self.container_append(CCircle(master=self, x=point.x, y=point.y, canvas=self.canvas))
-                    case "▢":
-                        self.container_append(CSquare(master=self, x=point.x, y=point.y, canvas=self.canvas))
-                    case "▭":
-                        self.container_append(CRectangle(master=self, x=point.x, y=point.y, canvas=self.canvas))
-                    case "△":
-                        self.container_append(CTriangle(master=self, x=point.x, y=point.y, canvas=self.canvas))
-                
-                self.redraw()
+                self.create_object(point.x, point.y)
             else:
                 for object in self.__selected_container:
                     object.measure_offsets(point.x, point.y)
-            
         
-    def handle_mouse_down(self, point):
-        if self.__selected_container and self.__widget == self.canvas:
+    def handle_mouse_down(self, point): # Что происходит во время зажатия мышью
+        __widget = self.__app.winfo_containing(point.x_root, point.y_root)
+        if self.__selected_container and __widget == self.canvas:
             self.safe_move_all(point) if not(self.__action) else self.scale_all(point)
 
             self.redraw()
+    
+    def create_object(self, x: int, y: int): # Создаёт новый объект по координатам
+        figure_classes = {
+            "○": CCircle,
+            "▢": CSquare,
+            "▭": CRectangle,
+            "△": CTriangle
+        }
+        figure_class = figure_classes.get(self.chosen_figure)
+        if figure_class:
+            obj = figure_class(master=self, x=x, y=y, canvas=self.canvas)
+            self.container_append(obj)
+            obj.check_outside()
+        else:
+            raise TypeError("Such figure class is not presented")
 
-    def select_objects(self, point): # Выделяет круги (в зависимости от __multiple_selection меняется поведение)
-        if not(self.__action):
-            for circle in self.__selected_container:
-                circle.deselect()
-            self.__selected_container.clear()
+        self.redraw()
+            
+    def container_append(self, object): # Добавляет в контейнер новую фигуру
+        print(f"Appending new object: {object}")
+        self.__container.insert(0, object)
+        self.__initial_sizes[object] = object.pass_size()
+    
+    def select_objects(self, point): # Выделяет круги
+        self.deselect_objects()
         
-        self.__selected_container.extend(list(filter(lambda x: x.mousecheck(point.x, point.y), self.__container)))
-        for circle in self.__selected_container:
-            circle.select()
+        for figure in self.__container:
+            if figure.mousecheck(point.x, point.y):
+                self.__selected_container.insert(0, figure)
+                if not(self.__action):
+                    break
         
         self.redraw()
     
     def deselect_objects(self, *args): # Снимает выделение со всех кругов
-        for circle in self.__selected_container:
-            circle.deselect()
-        self.__selected_container.clear()
-
-        self.redraw()
+        if not(self.__action):
+            self.__selected_container.clear()
     
     def delete_objects(self, *args): # Удаляет выделенные объекты
         for obj in self.__selected_container:
-            self.__container.remove(obj)
+            if obj in self.__container:
+                self.__container.remove(obj)
+            else:
+                raise IndexError("No such object in main container")
             del obj
         self.__selected_container.clear()
 
@@ -125,8 +130,9 @@ class Container(): # Главный контейнер объектов
     
     def redraw(self):
         self.canvas.delete("all")
-        for circle in self.__container:
-            circle.draw()
+        for figure_index in range(len(self.__container) - 1, -1, -1):
+            draw_border = True if self.__container[figure_index] in self.__selected_container else False
+            self.__container[figure_index].draw(draw_border)
 
 
 class EditorPanel(ctk.CTkFrame): # Главная панель с кнопками
@@ -158,7 +164,6 @@ class EditorPanel(ctk.CTkFrame): # Главная панель с кнопкам
     
     def change_figure(self, figure: str):
         self._container.chosen_figure = figure
-
 
 class App(ctk.CTk):
 
