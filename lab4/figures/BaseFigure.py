@@ -28,6 +28,13 @@ class Figure(): # Общий класс фигуры
     def draw(self): # Переопред. в классе
         self._chosen_border_color = self._border_color if self._selected else self._color
 
+    def move(self, x: int, y: int):
+        self._x = x
+        self._y = y
+    
+    def resize(self, new_size):
+        self.size = new_size
+
     def select(self):
         self._selected = True
 

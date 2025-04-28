@@ -40,8 +40,7 @@ class Container(): # Главный контейнер объектов
             new_positions.append((obj, new_x, new_y))
 
         for obj, x, y in new_positions:
-            obj._x = x
-            obj._y = y
+            obj.move(x, y)
     
     def scale_all(self, point): # Меняет размер объектов
         new_scales = []
@@ -60,7 +59,7 @@ class Container(): # Главный контейнер объектов
             new_scales.append((obj,new_size))
         
         for obj, new_size in new_scales:
-            obj.size = new_size
+            obj.resize(new_size)
         
     def measure_prolongate(self, start_point_x: int, start_point_y: int, end_point_x: int, end_point_y: int) -> float: # считает расстояние от точки до точки
         return sqrt((end_point_x - start_point_x)**2+(end_point_y - start_point_y)**2)
